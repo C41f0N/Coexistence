@@ -29,10 +29,33 @@ int main()
         }
     }
 
+    const siv::PerlinNoise::seed_type seed = rand();
+    const siv::PerlinNoise perlin{seed};
+
+    // Generating terrain
+    cout << "Generating Terrain" << endl;
+    for (int i = 0; i < width; i++)
+    {
+        for (int j = 0; j < height; j++)
+        {
+            const double noise = perlin.octave2D_01((i * 0.01), (j * 0.01), 1, 0.2);
+            // cout << "[" << i << ", " << j << "] : " << noise << endl;
+            if (noise > 0.4)
+            {
+                screenPixels[i][j]->setFillColor(Color(0, 200, 0, 200));
+            }
+            else
+            {
+                screenPixels[i][j]->setFillColor(Color(0, 100, 255, 150));
+            }
+            cout << round((i * 100) / width) << "%\n";
+        }
+    }
+
+    cout << "\nSeed: " << seed << endl;
+
     while (window.isOpen())
     {
-        const siv::PerlinNoise::seed_type seed = rand();
-        const siv::PerlinNoise perlin{seed};
 
         Event event;
         while (window.pollEvent(event))
@@ -45,34 +68,12 @@ int main()
 
         window.clear();
 
-        if (x < 500)
-        {
-            x++;
-        }
-        else
-        {
-            x = 0;
-        }
-
         // Draw the screen
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
-
-                const double noise = perlin.octave2D_01((i * 0.01), (j * 0.01), 4);
-                cout << "Noise: " << noise << endl;
-                if (noise > 0.3)
-                {
-                    screenPixels[i][j]->setFillColor(Color(255, 255, 255, 255));
-                }
-                else
-                {
-                    screenPixels[i][j]->setFillColor(Color(255, 255, 255, 0));
-                }
-
                 screenPixels[i][j]->setPosition(Vector2f(i, j));
-
                 window.draw(*screenPixels[i][j]);
             }
         }
