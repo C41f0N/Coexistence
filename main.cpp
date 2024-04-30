@@ -12,8 +12,10 @@ const int height = 700;
 const int width = 700;
 int numRabbits = 10;
 
-// Screen pixel data
-RectangleShape *screenPixels[height][width];
+// Objects for background generation and display
+Image terrainTextureImage;
+Texture terrainTexture;
+Sprite backgroundSprite;
 
 class Rabbit
 {
@@ -57,20 +59,6 @@ public:
     }
 };
 
-// To initialize screen pixels
-void initializeScreen()
-
-{
-    for (int i = 0; i < width; i++)
-    {
-        for (int j = 0; j < height; j++)
-        {
-            screenPixels[i][j] = new RectangleShape(Vector2f(1, 1));
-            screenPixels[i][j]->setPosition(Vector2f(i, j));
-        }
-    }
-}
-
 void displayLoadingScreen(RenderWindow *window)
 {
     Text text;
@@ -98,11 +86,11 @@ Image terrainImage;
 // To generate a terrain using perlin noise
 void generateTerrain()
 {
-    terrainImage.create(width, height, Color(0, 0, 0, 0));
+    terrainTextureImage.create(width, height, sf::Color(0, 0, 0, 0));
+
     const siv::PerlinNoise::seed_type seed = rand();
     const siv::PerlinNoise perlin{seed};
 
-    // Generating terrain
     for (int i = 0; i < width; i++)
     {
         for (int j = 0; j < height; j++)
@@ -110,14 +98,18 @@ void generateTerrain()
             const double noise = perlin.octave2D_01((i * 0.01), (j * 0.01), 1, 0.2);
             if (noise > 0.4)
             {
-                terrainImage.setPixel(i, j, Color(0, 100, 0, 255));
+                terrainTextureImage.setPixel(i, j, Color(0, 100, 0, 255));
             }
             else
             {
-                terrainImage.setPixel(i, j, Color(0, 100, 255, 150));
+                terrainTextureImage.setPixel(i, j, Color(0, 100, 255, 150));
             }
         }
     }
+
+    terrainTexture.loadFromImage(terrainTextureImage);
+
+    backgroundSprite.setTexture(terrainTexture);
 
     cout << "\nSeed: " << seed << endl;
 }
@@ -135,7 +127,7 @@ void initializeRabbits(RenderWindow *window)
         int rabbit_x = rand() % window->getSize().x;
         int rabbit_y = rand() % window->getSize().y;
 
-        while (screenPixels[rabbit_x][rabbit_y]->getFillColor().b != 0)
+        while (terrainImage.getPixel(rabbit_x, rabbit_y).b != 0)
         {
             rabbit_x = rand() % window->getSize().x;
             rabbit_y = rand() % window->getSize().y;
@@ -156,18 +148,9 @@ int main()
     window.setKeyRepeatEnabled(false);
 
     displayLoadingScreen(&window);
-    initializeScreen();
     generateTerrain();
-    initializeRabbits(&window);
-
-    Texture terrainTexture;
-    Sprite backgroundSprite;
-
-    terrainTexture.loadFromImage(terrainImage);
-
-    backgroundSprite.setTexture(terrainTexture);
-    backgroundSprite.setScale(Vector2f(width, height));
-    window.draw(backgroundSprite);
+    fprintf(stderr, "Here\n");
+    // initializeRabbits(&window);
 
     int i = 0;
     while (window.isOpen())
@@ -184,6 +167,7 @@ int main()
         }
 
         window.clear();
+        window.draw(backgroundSprite);
 
         // for (int i = 0; i < numRabbits; i++)
         // {
