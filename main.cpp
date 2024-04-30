@@ -2,16 +2,21 @@
 #include <iostream>
 #include <future>
 #include <ctime>
+#include <cmath>
 #include "PerlinNoise.hpp"
 
 using namespace std;
 using namespace sf;
 
 // Setting global variables
-const int height = 700;
-const int width = 700;
-int numRabbits = 10;
+const int height = 1080;
+const int width = 1920;
+int numRabbits = 10000;
+int frameRate = 60;
 
+int rabbitSpeedMax = 2;
+
+float deltaTime = 1 / frameRate;
 // Objects for background generation and display
 Image terrainTextureImage;
 Texture terrainTexture;
@@ -30,18 +35,11 @@ public:
     {
         this->speed = speed;
         shape.setPosition(pos_x, pos_y);
-        shape.setRadius(5);
+        shape.setRadius(2);
         shape.setFillColor(Color::White);
 
-        if (rand() % 10 > 5)
-        {
-            direction[0] = 1;
-        }
-
-        if (rand() % 10 > 5)
-        {
-            direction[1] = 1;
-        }
+        direction[0] = ((rand() / 1000) % 3) - 1;
+        direction[1] = ((rand() / 1000) % 3) - 1;
     }
 
     void draw(RenderWindow *window)
@@ -55,7 +53,8 @@ public:
             speed * direction[0],
             speed * direction[1]};
 
-        shape.setPosition(shape.getPosition().x + velocity[0], shape.getPosition().y + velocity[1]);
+        shape.setPosition(shape.getPosition().x + ((float)velocity[0]),
+                          shape.getPosition().y + ((float)velocity[1]));
     }
 };
 
@@ -63,7 +62,7 @@ void displayLoadingScreen(RenderWindow *window)
 {
     Text text;
     Font font;
-    font.loadFromFile("8-bit-hud.ttf");
+    font.loadFromFile("assets/fonts/8-bit-hud.ttf");
     text.setFont(font);
     text.setString("Generating\nTerrain...");
 
@@ -80,9 +79,6 @@ void displayLoadingScreen(RenderWindow *window)
     window->display();
 }
 
-Image *terrainImageP;
-
-Image terrainImage;
 // To generate a terrain using perlin noise
 void generateTerrain()
 {
@@ -127,14 +123,15 @@ void initializeRabbits(RenderWindow *window)
         int rabbit_x = rand() % window->getSize().x;
         int rabbit_y = rand() % window->getSize().y;
 
-        while (terrainImage.getPixel(rabbit_x, rabbit_y).b != 0)
+        while (terrainTextureImage.getPixel(rabbit_x, rabbit_y).b != 0)
         {
             rabbit_x = rand() % window->getSize().x;
             rabbit_y = rand() % window->getSize().y;
         }
 
-        rabbits[i] = new Rabbit(rabbit_x, rabbit_y, rand() % 50);
-        rabbits[i]->shape.setOrigin(rabbits[i]->shape.getGlobalBounds().width / 2, rabbits[i]->shape.getGlobalBounds().height / 2);
+        rabbits[i] = new Rabbit(rabbit_x, rabbit_y, (float)(((rand() % (rabbitSpeedMax * 1000)) / 1000)));
+        rabbits[i]->shape.setOrigin(rabbits[i]->shape.getGlobalBounds().width / 2,
+                                    rabbits[i]->shape.getGlobalBounds().height / 2);
     }
 }
 
@@ -146,16 +143,15 @@ int main()
     RenderWindow window(VideoMode(width, height), "Coexistence");
 
     window.setKeyRepeatEnabled(false);
+    window.setFramerateLimit(frameRate);
 
     displayLoadingScreen(&window);
     generateTerrain();
-    fprintf(stderr, "Here\n");
-    // initializeRabbits(&window);
+    initializeRabbits(&window);
 
     int i = 0;
     while (window.isOpen())
     {
-        cout << "printing frame" << ++i << endl;
 
         Event event;
         while (window.pollEvent(event))
@@ -169,11 +165,11 @@ int main()
         window.clear();
         window.draw(backgroundSprite);
 
-        // for (int i = 0; i < numRabbits; i++)
-        // {
-        //     rabbits[i]->move();
-        //     rabbits[i]->draw(&window);
-        // }
+        for (int i = 0; i < numRabbits; i++)
+        {
+            rabbits[i]->move();
+            rabbits[i]->draw(&window);
+        }
 
         window.display();
     }
