@@ -11,10 +11,16 @@ using namespace sf;
 // Setting global variables
 const int height = 1080;
 const int width = 1920;
-int numRabbits = 10000;
+int numRabbits = 500;
+int rabbitVision = 50;
 int frameRate = 60;
 
-int rabbitSpeedMax = 2;
+const float pi = 3.142;
+
+int hungerlevel = 10;
+int thirstlevel = 10;
+
+float rabbitSpeedMax = 0.3;
 
 float deltaTime = 1 / frameRate;
 // Objects for background generation and display
@@ -22,24 +28,145 @@ Image terrainTextureImage;
 Texture terrainTexture;
 Sprite backgroundSprite;
 
-class Rabbit
+class Animal
 {
+protected:
     CircleShape shape;
-    float speed = 5;
-    float direction[2] = {0, 1};
+    float speed;
+    Vector2f direction;
+    Vector2f position;
+    Vector2f nextPointToRoamTo;
 
     friend void initializeRabbits(RenderWindow *window);
 
 public:
-    Rabbit(float pos_x, float pos_y, float speed)
+    Animal() {}
+
+    Animal(
+        float speed,
+        Vector2f direction,
+        Vector2f position)
+        : speed(speed),
+          direction(direction),
+          position(position)
     {
-        this->speed = speed;
-        shape.setPosition(pos_x, pos_y);
-        shape.setRadius(2);
+        shape.setPosition(position);
+        shape.setRadius(5);
         shape.setFillColor(Color::White);
 
-        direction[0] = ((rand() / 1000) % 3) - 1;
-        direction[1] = ((rand() / 1000) % 3) - 1;
+        nextPointToRoamTo = position;
+    }
+
+    virtual void draw(RenderWindow *window) = 0; // virtual function
+
+    int eat()
+    {
+        hungerlevel -= 2;
+        if (hungerlevel < 0)
+            hungerlevel = 0;
+
+        return hungerlevel;
+    }
+
+    int drink()
+    {
+        thirstlevel -= 2;
+        if (thirstlevel < 0)
+            thirstlevel = 0;
+
+        return thirstlevel;
+    }
+
+    void roam()
+    {
+        Vector2f vectorToNextPoint = nextPointToRoamTo - position;
+        float distanceToNextPoint = pow(pow(vectorToNextPoint.x, 2) + pow(vectorToNextPoint.y, 2), 0.5);
+
+        cout << "distanceToNextPoint: " << distanceToNextPoint << endl;
+
+        if (distanceToNextPoint < 5)
+        {
+            // Select new point to roam to
+            float theta = (((float)(rand() % 1000) / 1000)) * (float)(2 * pi);
+            float r = (((float)(rand() % 1000) / 1000)) * rabbitVision;
+
+            float y = position.y + (float)(r * sin(theta));
+            float x = position.x + (float)(r * cos(theta));
+
+            nextPointToRoamTo = Vector2f(x, y);
+            cout << "Changing direction to (" << x << ", " << y << ")" << endl;
+        }
+        else
+        {
+            // Else go to the next point
+            direction = Vector2f(vectorToNextPoint.x / distanceToNextPoint, vectorToNextPoint.y / distanceToNextPoint);
+        }
+    }
+
+    void update()
+    {
+        roam();
+
+        Vector2f velocity;
+
+        velocity.x = direction.x * speed;
+        velocity.y = direction.y * speed;
+
+        position.x = position.x + velocity.x;
+        position.y = position.y + velocity.y;
+
+        shape.setPosition(position);
+    }
+
+    // bool checkforfood(string food[], int size)
+    // {
+    //     if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+    //     {
+    //         for (int i = 0; i < size; i++)
+    //         {
+    //             if (food[i] == "Plants" || food[i] == "Rabbit" || food[i] == "Wolf")
+    //             {
+    //                 return true;
+    //             }
+    //             else
+    //             {
+    //                 return false;
+    //             }
+    //         }
+    //     }
+    // }
+
+    bool checkforWater()
+    {
+
+        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+        {
+            return true; // Water found
+        }
+        else
+        {
+            return false; // No water found
+        }
+    }
+};
+
+class Rabbit : public Animal
+{
+public:
+    Rabbit() {}
+
+    Rabbit(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position) {}
+
+    bool checkforPredator()
+    {
+        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+        {
+            return true; // Predator found
+        }
+        else
+        {
+            return false; // No predator found
+        }
     }
 
     void draw(RenderWindow *window)
@@ -47,14 +174,61 @@ public:
         window->draw(shape);
     }
 
-    void move()
+    bool checkforfood(string food[], int size)
     {
-        float velocity[2] = {
-            speed * direction[0],
-            speed * direction[1]};
+        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                if (food[i] == "Plants")
+                {
+                    return true;
+                }
+                else
+                    return false;
+            }
+        }
+    }
+};
 
-        shape.setPosition(shape.getPosition().x + ((float)velocity[0]),
-                          shape.getPosition().y + ((float)velocity[1]));
+class Wolf : public Animal
+{
+public:
+    Wolf() {}
+
+    Wolf(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position) {}
+
+    bool checkforPrey()
+    {
+        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+        {
+            return true; // Prey found
+        }
+        else
+        {
+            return false; // No prey found
+        }
+    }
+
+    void draw(RenderWindow *window)
+    {
+        window->draw(shape);
+    }
+
+    bool checkforfood(string food[], int size)
+    {
+        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                if (food[i] == "Rabbit")
+                {
+                    return true;
+                }
+                else
+                    return false;
+            }
+        }
     }
 };
 
@@ -129,7 +303,7 @@ void initializeRabbits(RenderWindow *window)
             rabbit_y = rand() % window->getSize().y;
         }
 
-        rabbits[i] = new Rabbit(rabbit_x, rabbit_y, (float)(((rand() % (rabbitSpeedMax * 1000)) / 1000)));
+        rabbits[i] = new Rabbit(((float)(rand() % 1000) / 1000) * rabbitSpeedMax, Vector2f(1, 1), Vector2f(rabbit_x, rabbit_y));
         rabbits[i]->shape.setOrigin(rabbits[i]->shape.getGlobalBounds().width / 2,
                                     rabbits[i]->shape.getGlobalBounds().height / 2);
     }
@@ -167,7 +341,7 @@ int main()
 
         for (int i = 0; i < numRabbits; i++)
         {
-            rabbits[i]->move();
+            rabbits[i]->update();
             rabbits[i]->draw(&window);
         }
 
