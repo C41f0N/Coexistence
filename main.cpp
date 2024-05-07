@@ -20,6 +20,7 @@ const float pi = 3.142;
 int hungerlevel = 10;
 int thirstlevel = 10;
 
+float rabbitSpeedMin = 0.3;
 float rabbitSpeedMax = 0.3;
 
 float deltaTime = 1 / frameRate;
@@ -81,8 +82,6 @@ public:
     {
         Vector2f vectorToNextPoint = nextPointToRoamTo - position;
         float distanceToNextPoint = pow(pow(vectorToNextPoint.x, 2) + pow(vectorToNextPoint.y, 2), 0.5);
-
-        cout << "distanceToNextPoint: " << distanceToNextPoint << endl;
 
         if (distanceToNextPoint < 5)
         {
@@ -303,7 +302,7 @@ void initializeRabbits(RenderWindow *window)
             rabbit_y = rand() % window->getSize().y;
         }
 
-        rabbits[i] = new Rabbit(((float)(rand() % 1000) / 1000) * rabbitSpeedMax, Vector2f(1, 1), Vector2f(rabbit_x, rabbit_y));
+        rabbits[i] = new Rabbit((rabbitSpeedMin + ((float)(rand() % 1000) / 1000) * (rabbitSpeedMax - rabbitSpeedMin)), Vector2f(1, 1), Vector2f(rabbit_x, rabbit_y));
         rabbits[i]->shape.setOrigin(rabbits[i]->shape.getGlobalBounds().width / 2,
                                     rabbits[i]->shape.getGlobalBounds().height / 2);
     }
