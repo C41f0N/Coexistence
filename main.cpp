@@ -29,6 +29,11 @@ Image terrainTextureImage;
 Texture terrainTexture;
 Sprite backgroundSprite;
 
+bool terrainGenerated = false;
+
+bool isLand(int x, int y);
+bool isWithinBounds(int x, int y);
+
 class Animal
 {
 protected:
@@ -80,25 +85,35 @@ public:
 
     void roam()
     {
-        Vector2f vectorToNextPoint = nextPointToRoamTo - position;
-        float distanceToNextPoint = pow(pow(vectorToNextPoint.x, 2) + pow(vectorToNextPoint.y, 2), 0.5);
-
-        if (distanceToNextPoint < 5)
+        if (terrainGenerated)
         {
-            // Select new point to roam to
-            float theta = (((float)(rand() % 1000) / 1000)) * (float)(2 * pi);
-            float r = (((float)(rand() % 1000) / 1000)) * rabbitVision;
+            Vector2f vectorToNextPoint = nextPointToRoamTo - position;
+            float distanceToNextPoint = pow(pow(vectorToNextPoint.x, 2) + pow(vectorToNextPoint.y, 2), 0.5);
 
-            float y = position.y + (float)(r * sin(theta));
-            float x = position.x + (float)(r * cos(theta));
+            if (distanceToNextPoint < 5)
+            {
+                // Select new point to roam to
 
-            nextPointToRoamTo = Vector2f(x, y);
-            cout << "Changing direction to (" << x << ", " << y << ")" << endl;
-        }
-        else
-        {
-            // Else go to the next point
-            direction = Vector2f(vectorToNextPoint.x / distanceToNextPoint, vectorToNextPoint.y / distanceToNextPoint);
+                int x, y;
+
+                do
+                {
+                    float theta = (((float)(rand() % 1000) / 1000)) * (float)(2 * pi);
+                    float r = (((float)(rand() % 1000) / 1000)) * rabbitVision;
+
+                    x = (int)round(position.x + (float)(r * cos(theta)));
+                    y = (int)round(position.y + (float)(r * sin(theta)));
+
+                } while (!isLand(x, y));
+
+                nextPointToRoamTo = Vector2f(x, y);
+                cout << "Changing direction to (" << x << ", " << y << ")" << endl;
+            }
+            else
+            {
+                // Else go to the next point
+                direction = Vector2f(vectorToNextPoint.x / distanceToNextPoint, vectorToNextPoint.y / distanceToNextPoint);
+            }
         }
     }
 
@@ -280,7 +295,34 @@ void generateTerrain()
 
     backgroundSprite.setTexture(terrainTexture);
 
+    terrainGenerated = true;
+
     cout << "\nSeed: " << seed << endl;
+}
+
+bool isLand(int x, int y)
+{
+    fprintf(stderr, "Checking if (%d, %d) is on land.\n", x, y);
+
+    if (isWithinBounds(x, y))
+    {
+        Color thisPixel = terrainTextureImage.getPixel(x, y);
+
+        return thisPixel.b == 0;
+    }
+    else
+    {
+        return false;
+    }
+    // return true;
+}
+
+bool isWithinBounds(int x, int y)
+{
+    fprintf(stderr, "Checking if (%d, %d) is within bounds.\n", x, y);
+
+    return (x < width && x > 0 && y < height && y > 0);
+    // return true;
 }
 
 Rabbit **rabbits;
