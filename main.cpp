@@ -12,16 +12,20 @@ using namespace sf;
 const int height = 1080;
 const int width = 1920;
 int numRabbits = 500;
+float rabbitSize = 2;
 int rabbitVision = 50;
 int frameRate = 60;
+
+int landColorRGBA[4] = {1, 99, 0, 255};
+int waterColorRGBA[4] = {6, 54, 137, 255};
 
 const float pi = 3.142;
 
 int hungerlevel = 10;
 int thirstlevel = 10;
 
-float rabbitSpeedMin = 0.3;
-float rabbitSpeedMax = 0.3;
+float rabbitSpeedMin = 0.1;
+float rabbitSpeedMax = 0.2;
 
 float deltaTime = 1 / frameRate;
 // Objects for background generation and display
@@ -57,7 +61,7 @@ public:
           position(position)
     {
         shape.setPosition(position);
-        shape.setRadius(5);
+        shape.setRadius(rabbitSize);
         shape.setFillColor(Color::White);
 
         nextPointToRoamTo = position;
@@ -107,7 +111,6 @@ public:
                 } while (!isLand(x, y));
 
                 nextPointToRoamTo = Vector2f(x, y);
-                cout << "Changing direction to (" << x << ", " << y << ")" << endl;
             }
             else
             {
@@ -150,6 +153,7 @@ public:
     //     }
     // }
 
+    // Gonna search starting from the center, and searching in a circle, like the circle grows wider, this way we van ge the closest source of water / land
     bool checkforWater()
     {
 
@@ -282,11 +286,11 @@ void generateTerrain()
             const double noise = perlin.octave2D_01((i * 0.01), (j * 0.01), 1, 0.2);
             if (noise > 0.4)
             {
-                terrainTextureImage.setPixel(i, j, Color(0, 100, 0, 255));
+                terrainTextureImage.setPixel(i, j, Color(landColorRGBA[0], landColorRGBA[1], landColorRGBA[2], landColorRGBA[3]));
             }
             else
             {
-                terrainTextureImage.setPixel(i, j, Color(0, 100, 255, 150));
+                terrainTextureImage.setPixel(i, j, Color(waterColorRGBA[0], waterColorRGBA[1], waterColorRGBA[2], waterColorRGBA[3]));
             }
         }
     }
@@ -302,27 +306,22 @@ void generateTerrain()
 
 bool isLand(int x, int y)
 {
-    fprintf(stderr, "Checking if (%d, %d) is on land.\n", x, y);
-
     if (isWithinBounds(x, y))
     {
         Color thisPixel = terrainTextureImage.getPixel(x, y);
 
-        return thisPixel.b == 0;
+        return thisPixel.r == landColorRGBA[0] && thisPixel.g == landColorRGBA[1] && thisPixel.b == landColorRGBA[2] && thisPixel.a == landColorRGBA[3];
     }
     else
     {
         return false;
     }
-    // return true;
 }
 
 bool isWithinBounds(int x, int y)
 {
-    fprintf(stderr, "Checking if (%d, %d) is within bounds.\n", x, y);
 
     return (x < width && x > 0 && y < height && y > 0);
-    // return true;
 }
 
 Rabbit **rabbits;
@@ -338,7 +337,7 @@ void initializeRabbits(RenderWindow *window)
         int rabbit_x = rand() % window->getSize().x;
         int rabbit_y = rand() % window->getSize().y;
 
-        while (terrainTextureImage.getPixel(rabbit_x, rabbit_y).b != 0)
+        while (!isLand(rabbit_x, rabbit_y))
         {
             rabbit_x = rand() % window->getSize().x;
             rabbit_y = rand() % window->getSize().y;
