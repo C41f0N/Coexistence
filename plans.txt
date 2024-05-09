@@ -1,0 +1,13 @@
+# Marking positions of animals on the terrain map
+
+If sfml allows this and doesnt crash, i would like to mark the pixels of our terrain over which our entities (animals) are being drawn on. This is needed for the next part that is discussed below. Because if i am to search what is close to a single rabbit (be it food water or wolves) I will have to search the WHOLE LISTS of these entities and check thier distances from the my current rabbit. This can be easy to process for a small number of rabbits, but for a number like 500, the computation power will be n^2, which means 500 * 500 wichi is 250000, for just one search per each rabbit, so no lol.
+
+But to impliment this we would need to remember what each pixel was colored before it was replaced by the color of the animal itself. So we would need an attribute to store that pixel information, and would need to put it back in the pixel once the animal moves away from it.
+
+# Searching for anything
+
+As in how does an animal look for a certain thing, i was thinking of a way that the search started from the closest pixels and gradually increases the search radius to check if the thing is found.
+
+I can do this by using polar coordinates, starting with r = 1, in which case only i think 6 pixels will be seen, we can start with theta as 0 and increment it to cover whole 360 degrees for that particular radius, then increment the radius and go again.
+
+Now the problem is that the higher the radius goes, the lesser the increment in theta needs to be, i think we can get over that by calculating an estimate of the number of pixels that we will cover when doing a circle round, we can use that by calculating the circumference of the circle given the radius (2 * pi * r), this will give us an estimate on the amount of pixels we will come across, which we can divide 2pi with to get a perfect theta increment value that will be efficient and will conver all pixels in that specific radius.
