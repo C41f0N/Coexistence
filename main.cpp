@@ -319,11 +319,19 @@ public:
     void eat()
     {
         capacity--;
+
+        if (capacity <= 0)
+        {
+            removePositionFromBlueprint('f', position.x, position.y);
+        }
     }
 
     void draw(RenderWindow *window)
     {
-        window->draw(shape);
+        if (capacity > 0)
+        {
+            window->draw(shape);
+        }
     }
 };
 
