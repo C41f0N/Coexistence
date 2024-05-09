@@ -3,15 +3,22 @@
 #include <future>
 #include <ctime>
 #include <cmath>
+#include <vector>
 #include "PerlinNoise.hpp"
 
 using namespace std;
 using namespace sf;
 
+// Char identifiers for entities on screen
+char waterCharIdentifier = 'w';
+char landCharIdentifier = 'l';
+char rabbitCharIdentifier = 'r';
+char foodCharIdentifier = 'f';
+
 // Setting global variables
 const int height = 1080;
 const int width = 1920;
-int numRabbits = 500;
+int numRabbits = 100;
 float rabbitSize = 2;
 int rabbitVision = 50;
 int frameRate = 60;
@@ -28,24 +35,32 @@ float rabbitSpeedMin = 0.1;
 float rabbitSpeedMax = 0.2;
 
 float deltaTime = 1 / frameRate;
-// Objects for background generation and display
+
+// Objects for terrain generation and display
 Image terrainTextureImage;
 Texture terrainTexture;
 Sprite backgroundSprite;
 
+// Array that holds the position data for entities
+vector<char> positionBlueprint[width][height];
+
 bool terrainGenerated = false;
 
+// Function headers
 bool isLand(int x, int y);
 bool isWithinBounds(int x, int y);
+void addToPositionBlueprint(char charIdentifier, int x, int y);
+bool checkPositionInBlueprint(char charIdentifier, int x, int y);
+void removePositionFromBlueprint(char charIdentifier, int x, int y);
 
 class Animal
 {
 protected:
-    CircleShape shape;
-    float speed;
-    Vector2f direction;
-    Vector2f position;
-    Vector2f nextPointToRoamTo;
+    CircleShape shape;          // SFML Shape object for the animal
+    float speed;                // Speed of the animal
+    Vector2f direction;         // Direction the animal is headed
+    Vector2f position;          // Current position of the animal
+    Vector2f nextPointToRoamTo; // Direction the animal is headed when roaming randomly
 
     friend void initializeRabbits(RenderWindow *window);
 
@@ -60,6 +75,9 @@ public:
           direction(direction),
           position(position)
     {
+        // Setting the shape origin to center
+        shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+
         shape.setPosition(position);
         shape.setRadius(rabbitSize);
         shape.setFillColor(Color::White);
@@ -120,19 +138,14 @@ public:
         }
     }
 
+    virtual void move()
+    {
+    }
+
     void update()
     {
         roam();
-
-        Vector2f velocity;
-
-        velocity.x = direction.x * speed;
-        velocity.y = direction.y * speed;
-
-        position.x = position.x + velocity.x;
-        position.y = position.y + velocity.y;
-
-        shape.setPosition(position);
+        move();
     }
 
     // bool checkforfood(string food[], int size)
@@ -171,7 +184,11 @@ public:
 class Rabbit : public Animal
 {
 public:
-    Rabbit() {}
+    Rabbit()
+    {
+        // Put shape position in position blueprint
+        addToPositionBlueprint('r', floor(position.x), floor(position.y));
+    }
 
     Rabbit(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position) {}
 
@@ -185,6 +202,25 @@ public:
         {
             return false; // No predator found
         }
+    }
+
+    void move() override
+    {
+
+        Vector2f velocity;
+
+        velocity.x = direction.x * speed;
+        velocity.y = direction.y * speed;
+
+        // Remove old position blueprint
+        removePositionFromBlueprint('r', floor(position.x), floor(position.y));
+
+        position.x = position.x + velocity.x;
+        position.y = position.y + velocity.y;
+
+        addToPositionBlueprint('r', floor(position.x), floor(position.y));
+
+        shape.setPosition(position);
     }
 
     void draw(RenderWindow *window)
@@ -286,10 +322,12 @@ void generateTerrain()
             const double noise = perlin.octave2D_01((i * 0.01), (j * 0.01), 1, 0.2);
             if (noise > 0.4)
             {
+                addToPositionBlueprint('l', i, j);
                 terrainTextureImage.setPixel(i, j, Color(landColorRGBA[0], landColorRGBA[1], landColorRGBA[2], landColorRGBA[3]));
             }
             else
             {
+                addToPositionBlueprint('w', i, j);
                 terrainTextureImage.setPixel(i, j, Color(waterColorRGBA[0], waterColorRGBA[1], waterColorRGBA[2], waterColorRGBA[3]));
             }
         }
@@ -343,10 +381,58 @@ void initializeRabbits(RenderWindow *window)
             rabbit_y = rand() % window->getSize().y;
         }
 
+        // Create and set rabbit
         rabbits[i] = new Rabbit((rabbitSpeedMin + ((float)(rand() % 1000) / 1000) * (rabbitSpeedMax - rabbitSpeedMin)), Vector2f(1, 1), Vector2f(rabbit_x, rabbit_y));
-        rabbits[i]->shape.setOrigin(rabbits[i]->shape.getGlobalBounds().width / 2,
-                                    rabbits[i]->shape.getGlobalBounds().height / 2);
     }
+}
+
+void addToPositionBlueprint(char charIdentifier, int x, int y)
+{
+    // Adding the char to the blueprint
+    positionBlueprint[x][y].push_back(charIdentifier);
+}
+
+bool checkPositionInBlueprint(char charIdentifier, int x, int y)
+{
+    for (int i = 0; i < positionBlueprint[x][y].size(); i++)
+    {
+        if (positionBlueprint[x][y][i] == charIdentifier)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void removePositionFromBlueprint(char charIdentifier, int x, int y)
+{
+    int existsAt = -1;
+
+    // Checking if charIdentifier exists on the coordinates
+    for (int i = 0; i < positionBlueprint[x][y].size(); i++)
+    {
+        if (positionBlueprint[x][y][i] == charIdentifier)
+        {
+            existsAt = i;
+            break;
+        }
+    }
+
+    // Removing position from blueprint if it exists
+    if (existsAt != -1)
+    {
+        vector<char>::iterator it = positionBlueprint[x][y].begin();
+        advance(it, existsAt);
+
+        positionBlueprint[x][y].erase(it);
+    }
+}
+
+void initialize(RenderWindow *window)
+{
+    generateTerrain();
+    initializeRabbits(window);
 }
 
 int main()
@@ -356,12 +442,12 @@ int main()
 
     RenderWindow window(VideoMode(width, height), "Coexistence");
 
+    initialize(&window);
+
     window.setKeyRepeatEnabled(false);
     window.setFramerateLimit(frameRate);
 
     displayLoadingScreen(&window);
-    generateTerrain();
-    initializeRabbits(&window);
 
     int i = 0;
     while (window.isOpen())
