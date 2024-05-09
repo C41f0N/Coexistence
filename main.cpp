@@ -18,10 +18,15 @@ char foodCharIdentifier = 'f';
 // Setting global variables
 const int height = 1080;
 const int width = 1920;
-int numRabbits = 100;
-float rabbitSize = 2;
+int numRabbits = 500;
+float rabbitSize = 3;
 int rabbitVision = 50;
 int frameRate = 60;
+
+float foodSize = 2;
+float foodDensity = 0.0001;
+
+int numFoods = floor((width * height) * foodDensity);
 
 int landColorRGBA[4] = {1, 99, 0, 255};
 int waterColorRGBA[4] = {6, 54, 137, 255};
@@ -35,6 +40,12 @@ float rabbitSpeedMin = 0.1;
 float rabbitSpeedMax = 0.2;
 
 float deltaTime = 1 / frameRate;
+
+class Rabbit;
+class Food;
+
+Rabbit **rabbits;
+Food **foods;
 
 // Objects for terrain generation and display
 Image terrainTextureImage;
@@ -79,8 +90,6 @@ public:
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
 
         shape.setPosition(position);
-        shape.setRadius(rabbitSize);
-        shape.setFillColor(Color::White);
 
         nextPointToRoamTo = position;
     }
@@ -184,13 +193,14 @@ public:
 class Rabbit : public Animal
 {
 public:
-    Rabbit()
+    Rabbit(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position)
     {
+        shape.setRadius(rabbitSize);
+        shape.setFillColor(Color::White);
+
         // Put shape position in position blueprint
         addToPositionBlueprint('r', floor(position.x), floor(position.y));
     }
-
-    Rabbit(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position) {}
 
     bool checkforPredator()
     {
@@ -286,6 +296,37 @@ public:
     }
 };
 
+class Food
+{
+    CircleShape shape;
+    int capacity;
+    Vector2f position;
+
+public:
+    Food(Vector2f position) : capacity(5)
+    {
+        shape.setRadius(foodSize);
+        shape.setFillColor(Color::Yellow);
+        shape.setPosition(position);
+
+        // registering food to blueprint
+        addToPositionBlueprint('f', floor(position.x), floor(position.y));
+
+        // Centering the shape's origin
+        shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+    }
+
+    void eat()
+    {
+        capacity--;
+    }
+
+    void draw(RenderWindow *window)
+    {
+        window->draw(shape);
+    }
+};
+
 void displayLoadingScreen(RenderWindow *window)
 {
     Text text;
@@ -362,8 +403,6 @@ bool isWithinBounds(int x, int y)
     return (x < width && x > 0 && y < height && y > 0);
 }
 
-Rabbit **rabbits;
-
 void initializeRabbits(RenderWindow *window)
 {
 
@@ -383,6 +422,27 @@ void initializeRabbits(RenderWindow *window)
 
         // Create and set rabbit
         rabbits[i] = new Rabbit((rabbitSpeedMin + ((float)(rand() % 1000) / 1000) * (rabbitSpeedMax - rabbitSpeedMin)), Vector2f(1, 1), Vector2f(rabbit_x, rabbit_y));
+    }
+}
+
+void initializeFood()
+{
+    foods = new Food *[numFoods];
+
+    // Initializing Rabbits
+    for (int i = 0; i < numFoods; i++)
+    {
+        int food_x = rand() % width;
+        int food_y = rand() % height;
+
+        while (!isLand(food_x, food_y))
+        {
+            food_x = rand() % width;
+            food_y = rand() % height;
+        }
+
+        // Create and set rabbit
+        foods[i] = new Food(Vector2f(food_x, food_y));
     }
 }
 
@@ -433,6 +493,7 @@ void initialize(RenderWindow *window)
 {
     generateTerrain();
     initializeRabbits(window);
+    initializeFood();
 }
 
 int main()
@@ -469,6 +530,11 @@ int main()
         {
             rabbits[i]->update();
             rabbits[i]->draw(&window);
+        }
+
+        for (int i = 0; i < numFoods; i++)
+        {
+            foods[i]->draw(&window);
         }
 
         window.display();
