@@ -26,10 +26,13 @@ def printMap():
         print("")
 
 
+printMap()
+time.sleep(1 / 4)
+
 # Searching
 for r in range(1, mySight + 1):
     theta = 0
-    dtheta = 1 / (2 * r)
+    dtheta = 1 / ((2) * r)
     while theta < (2 * math.pi):
         x = r * math.cos(theta)
         y = r * math.sin(theta)
