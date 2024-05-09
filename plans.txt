@@ -1,8 +1,11 @@
-# Marking positions of animals on the terrain map
+# Marking positions of animals on a sort of blueprint ---- DONE
 
 If sfml allows this and doesnt crash, i would like to mark the pixels of our terrain over which our entities (animals) are being drawn on. This is needed for the next part that is discussed below. Because if i am to search what is close to a single rabbit (be it food water or wolves) I will have to search the WHOLE LISTS of these entities and check thier distances from the my current rabbit. This can be easy to process for a small number of rabbits, but for a number like 500, the computation power will be n^2, which means 500 * 500 wichi is 250000, for just one search per each rabbit, so no lol.
 
 But to impliment this we would need to remember what each pixel was colored before it was replaced by the color of the animal itself. So we would need an attribute to store that pixel information, and would need to put it back in the pixel once the animal moves away from it.
+
+---------------------
+This above mechanic can't be implimented because the map would have to be redrawn every time, so an easier approach will be to use an array that can act like a copy of the map that will contain data for the map, and the searching will be done on that map too, no redraw is needed because none of the data is drawn in the first place.
 
 # Searching for anything
 
