@@ -23,6 +23,8 @@ float rabbitSize = 3;
 int rabbitVision = 50;
 int frameRate = 60;
 
+int rabbitsCapacity = 1;
+
 float foodSize = 2;
 float foodDensity = 0.0001;
 
@@ -44,8 +46,7 @@ float deltaTime = 1 / frameRate;
 class Rabbit;
 class Food;
 
-Rabbit **rabbits;
-Food **foods;
+vector<Rabbit *> rabbits;
 
 // Objects for terrain generation and display
 Image terrainTextureImage;
@@ -89,12 +90,17 @@ public:
         // Setting the shape origin to center
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
 
-        shape.setPosition(position);
+        shape.setPosition(floor(position.x), floor(position.y));
 
         nextPointToRoamTo = position;
     }
 
     virtual void draw(RenderWindow *window) = 0; // virtual function
+
+    Vector2f getPosition()
+    {
+        return position;
+    }
 
     int eat()
     {
@@ -356,6 +362,8 @@ void displayLoadingScreen(RenderWindow *window)
     window->display();
 }
 
+// ------------ TERRAIN FUNCTIONS ----------------
+
 // To generate a terrain using perlin noise
 void generateTerrain()
 {
@@ -391,68 +399,7 @@ void generateTerrain()
     cout << "\nSeed: " << seed << endl;
 }
 
-bool isLand(int x, int y)
-{
-    if (isWithinBounds(x, y))
-    {
-        Color thisPixel = terrainTextureImage.getPixel(x, y);
-
-        return thisPixel.r == landColorRGBA[0] && thisPixel.g == landColorRGBA[1] && thisPixel.b == landColorRGBA[2] && thisPixel.a == landColorRGBA[3];
-    }
-    else
-    {
-        return false;
-    }
-}
-
-bool isWithinBounds(int x, int y)
-{
-
-    return (x < width && x > 0 && y < height && y > 0);
-}
-
-void initializeRabbits(RenderWindow *window)
-{
-
-    rabbits = new Rabbit *[numRabbits];
-
-    // Initializing Rabbits
-    for (int i = 0; i < numRabbits; i++)
-    {
-        int rabbit_x = rand() % window->getSize().x;
-        int rabbit_y = rand() % window->getSize().y;
-
-        while (!isLand(rabbit_x, rabbit_y))
-        {
-            rabbit_x = rand() % window->getSize().x;
-            rabbit_y = rand() % window->getSize().y;
-        }
-
-        // Create and set rabbit
-        rabbits[i] = new Rabbit((rabbitSpeedMin + ((float)(rand() % 1000) / 1000) * (rabbitSpeedMax - rabbitSpeedMin)), Vector2f(1, 1), Vector2f(rabbit_x, rabbit_y));
-    }
-}
-
-void initializeFood()
-{
-    foods = new Food *[numFoods];
-
-    // Initializing Rabbits
-    for (int i = 0; i < numFoods; i++)
-    {
-        int food_x = rand() % width;
-        int food_y = rand() % height;
-
-        while (!isLand(food_x, food_y))
-        {
-            food_x = rand() % width;
-            food_y = rand() % height;
-        }
-
-        // Create and set rabbit
-        foods[i] = new Food(Vector2f(food_x, food_y));
-    }
-}
+// ------------ POSITION BLUEPRINT FUNCTIONS ----------------
 
 void addToPositionBlueprint(char charIdentifier, int x, int y)
 {
@@ -497,11 +444,122 @@ void removePositionFromBlueprint(char charIdentifier, int x, int y)
     }
 }
 
-void initialize(RenderWindow *window)
+// ------------ UTILITY FUNCTIONS ----------------
+
+bool isLand(int x, int y)
 {
+    if (isWithinBounds(x, y))
+    {
+        Color thisPixel = terrainTextureImage.getPixel(x, y);
+
+        return thisPixel.r == landColorRGBA[0] && thisPixel.g == landColorRGBA[1] && thisPixel.b == landColorRGBA[2] && thisPixel.a == landColorRGBA[3];
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool isWithinBounds(int x, int y)
+{
+
+    return (x < width && x > 0 && y < height && y > 0);
+}
+
+// ------------ FUNCTIONS FOR RABBITS ------------------
+
+void addRabbit(Vector2f position)
+{
+    int rabbit_x = floor(position.x);
+    int rabbit_y = floor(position.y);
+
+    Rabbit *rabbit = new Rabbit((rabbitSpeedMin + ((float)(rand() % 1000) / 1000) * (rabbitSpeedMax - rabbitSpeedMin)),
+                                Vector2f(1, 1),
+                                Vector2f(rabbit_x, rabbit_y));
+
+    rabbits.push_back(rabbit);
+}
+
+void removeRabbit(Vector2f position)
+{
+
+    int targetAt = -1;
+
+    for (int i = 0; i < rabbits.size(); i++)
+    {
+        if (rabbits[i]->getPosition() == position)
+        {
+            targetAt = i;
+            break;
+        }
+    }
+
+    if (targetAt >= 0 && targetAt <= rabbits.size())
+    {
+        vector<Rabbit *>::iterator it = rabbits.begin();
+
+        advance(it, targetAt);
+
+        rabbits.erase(it);
+    }
+}
+
+void initializeRabbits()
+{
+    for (int i = 0; i < numRabbits; i++)
+    {
+
+        int rabbit_x;
+        int rabbit_y;
+
+        do
+        {
+            rabbit_x = rand() % width;
+            rabbit_y = rand() % height;
+        } while (!isLand(rabbit_x, rabbit_y));
+
+        addRabbit(Vector2f((float)rabbit_x, (float)rabbit_y));
+    }
+}
+
+void updateAllRabbits()
+{
+    for (int i = 0; i < rabbits.size(); i++)
+    {
+        rabbits[i]->update();
+    }
+}
+
+void drawAllRabbits(RenderWindow *window)
+{
+
+    for (int i = 0; i < rabbits.size(); i++)
+    {
+        rabbits[i]->draw(window);
+    }
+}
+
+// ------------- MASTER FUNCTIONS -----------------------
+
+void masterUpdate()
+{
+    updateAllRabbits();
+}
+
+void masterDraw(RenderWindow *window)
+{
+    // Draw the terrain
+    window->draw(backgroundSprite);
+
+    // Draw the rabbits
+    drawAllRabbits(window);
+}
+
+void masterInitialize()
+{
+
     generateTerrain();
-    initializeRabbits(window);
-    initializeFood();
+    initializeRabbits();
 }
 
 int main()
@@ -511,14 +569,13 @@ int main()
 
     RenderWindow window(VideoMode(width, height), "Coexistence");
 
-    initialize(&window);
+    masterInitialize();
 
     window.setKeyRepeatEnabled(false);
     window.setFramerateLimit(frameRate);
 
     displayLoadingScreen(&window);
 
-    int i = 0;
     while (window.isOpen())
     {
 
@@ -531,19 +588,11 @@ int main()
             }
         }
 
+        masterUpdate();
+
         window.clear();
-        window.draw(backgroundSprite);
 
-        for (int i = 0; i < numRabbits; i++)
-        {
-            rabbits[i]->update();
-            rabbits[i]->draw(&window);
-        }
-
-        for (int i = 0; i < numFoods; i++)
-        {
-            foods[i]->draw(&window);
-        }
+        masterDraw(&window);
 
         window.display();
     }
