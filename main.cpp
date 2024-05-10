@@ -65,6 +65,7 @@ bool isWithinBounds(int x, int y);
 void addToPositionBlueprint(char charIdentifier, int x, int y);
 bool checkPositionInBlueprint(char charIdentifier, int x, int y);
 void removePositionFromBlueprint(char charIdentifier, int x, int y);
+void removeFood(Vector2f position);
 
 class Animal
 {
@@ -319,7 +320,7 @@ public:
 
         if (capacity <= 0)
         {
-            removeFood(Vector2f((float)position.x, (float)position.y))
+            removeFood(Vector2f((float)position.x, (float)position.y));
         }
     }
 
@@ -554,6 +555,7 @@ void removeFood(Vector2f position)
         cout << foods[i]->getPosition().x << " " << foods[i]->getPosition().x << endl;
         if (foods[i]->getPosition() == position)
         {
+            cout << "removing food\n";
             targetAt = i;
             break;
         }
