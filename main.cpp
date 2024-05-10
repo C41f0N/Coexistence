@@ -16,17 +16,15 @@ char rabbitCharIdentifier = 'r';
 char foodCharIdentifier = 'f';
 
 // Setting global variables
-const int height = 1080;
-const int width = 1920;
-int numRabbits = 500;
+const int height = 1080 / 2;
+const int width = 1920 / 2;
+int numRabbits = 250;
 float rabbitSize = 3;
-int rabbitVision = 50;
+int rabbitVision = 30;
 int frameRate = 60;
 
-int rabbitsCapacity = 1;
-
-float foodSize = 2;
-float foodDensity = 5;
+float foodSize = 5;
+float foodDensity = 2.5;
 
 int numFoods = floor((width * height) * foodDensity);
 
@@ -38,8 +36,8 @@ const float pi = 3.142;
 int hungerlevel = 10;
 int thirstlevel = 10;
 
-float rabbitSpeedMin = 0.1;
-float rabbitSpeedMax = 0.2;
+float rabbitSpeedMin = 1;
+float rabbitSpeedMax = 1;
 
 float deltaTime = 1 / frameRate;
 
@@ -66,6 +64,8 @@ void addToPositionBlueprint(char charIdentifier, int x, int y);
 bool checkPositionInBlueprint(char charIdentifier, int x, int y);
 void removePositionFromBlueprint(char charIdentifier, int x, int y);
 void removeFood(Vector2f position);
+
+// ----------------- CLASSES ------------------
 
 class Animal
 {
@@ -145,16 +145,15 @@ public:
 
                 nextPointToRoamTo = Vector2f(x, y);
             }
-            else
-            {
-                // Else go to the next point
-                direction = Vector2f(vectorToNextPoint.x / distanceToNextPoint, vectorToNextPoint.y / distanceToNextPoint);
-            }
         }
     }
 
     virtual void move()
     {
+        Vector2f vectorToNextPoint = nextPointToRoamTo - position;
+        float distanceToNextPoint = pow(pow(vectorToNextPoint.x, 2) + pow(vectorToNextPoint.y, 2), 0.5);
+
+        direction = Vector2f(vectorToNextPoint.x / distanceToNextPoint, vectorToNextPoint.y / distanceToNextPoint);
     }
 
     void update()
@@ -163,23 +162,10 @@ public:
         move();
     }
 
-    // bool checkforfood(string foods[], int size)
-    // {
-    //     if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
-    //     {
-    //         for (int i = 0; i < size; i++)
-    //         {
-    //             if (foods[i] == "Plants" || foods[i] == "Rabbit" || foods[i] == "Wolf")
-    //             {
-    //                 return true;
-    //             }
-    //             else
-    //             {
-    //                 return false;
-    //             }
-    //         }
-    //     }
-    // }
+    virtual bool checkforfood()
+    {
+        return false;
+    }
 
     // Gonna search starting from the center, and searching in a circle, like the circle grows wider, this way we van ge the closest source of water / land
     bool checkforWater()
@@ -220,6 +206,8 @@ public:
     void move() override
     {
 
+        Animal::move();
+
         Vector2f velocity;
 
         velocity.x = direction.x * speed;
@@ -241,20 +229,60 @@ public:
         window->draw(shape);
     }
 
-    bool checkforfood(string foods[], int size)
+    bool checkforfood()
     {
-        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+
+        // Scan suroundings and look for food
+        for (int r = 0; r < rabbitVision + 1; r++)
         {
-            for (int i = 0; i < size; i++)
+            if (r == 0)
             {
-                if (foods[i] == "Plants")
+                int search_x = round(position.x);
+                int search_y = round(position.y);
+
+                // If food found
+                if (checkPositionInBlueprint('f', search_x, search_y))
                 {
+                    nextPointToRoamTo = Vector2f((float)search_x, (float)search_y);
                     return true;
                 }
-                else
-                    return false;
+            }
+            else
+            {
+                float dtheta = (float)(1 / (float)(2 * r));
+                for (float theta = 0; theta < (2 * pi); theta += dtheta)
+                {
+                    int search_x = round(position.x + r * cos(theta));
+                    int search_y = round(position.y + r * sin(theta));
+
+                    // If food found
+                    if (checkPositionInBlueprint('f', search_x, search_y))
+                    {
+                        nextPointToRoamTo = Vector2f((float)search_x, (float)search_y);
+                        return true;
+                    }
+                }
             }
         }
+
+        return false;
+    }
+
+    void update()
+    {
+
+        // If hunger level is down then check for food before roaming
+        if (true)
+        {
+            bool foodFound = checkforfood();
+
+            if (!foodFound)
+            {
+                roam();
+            }
+        }
+
+        move();
     }
 };
 
@@ -280,20 +308,21 @@ public:
         window->draw(shape);
     }
 
-    bool checkforfood(string foods[], int size)
+    bool checkforfood()
     {
-        if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
-        {
-            for (int i = 0; i < size; i++)
-            {
-                if (foods[i] == "Rabbit")
-                {
-                    return true;
-                }
-                else
-                    return false;
-            }
-        }
+        // if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
+        // {
+        //     for (int i = 0; i < size; i++)
+        //     {
+        //         if (foods[i] == "Rabbit")
+        //         {
+        //             return true;
+        //         }
+        //         else
+        //             return false;
+        //     }
+        // }
+        return false;
     }
 };
 
@@ -308,10 +337,12 @@ public:
     {
         shape.setRadius(foodSize);
         shape.setFillColor(Color::Yellow);
+
+        shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+
         shape.setPosition(floor(position.x), floor(position.y));
 
         // Centering the shape's origin
-        shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
     }
 
     void eat()
@@ -401,16 +432,22 @@ void generateTerrain()
 void addToPositionBlueprint(char charIdentifier, int x, int y)
 {
     // Adding the char to the blueprint
-    positionBlueprint[x][y].push_back(charIdentifier);
+    if (isWithinBounds(x, y))
+    {
+        positionBlueprint[x][y].push_back(charIdentifier);
+    }
 }
 
 bool checkPositionInBlueprint(char charIdentifier, int x, int y)
 {
-    for (int i = 0; i < positionBlueprint[x][y].size(); i++)
+    if (isWithinBounds(x, y))
     {
-        if (positionBlueprint[x][y][i] == charIdentifier)
+        for (int i = 0; i < positionBlueprint[x][y].size(); i++)
         {
-            return true;
+            if (positionBlueprint[x][y][i] == charIdentifier)
+            {
+                return true;
+            }
         }
     }
 
@@ -419,25 +456,28 @@ bool checkPositionInBlueprint(char charIdentifier, int x, int y)
 
 void removePositionFromBlueprint(char charIdentifier, int x, int y)
 {
-    int existsAt = -1;
-
-    // Checking if charIdentifier exists on the coordinates
-    for (int i = 0; i < positionBlueprint[x][y].size(); i++)
+    if (isWithinBounds(x, y))
     {
-        if (positionBlueprint[x][y][i] == charIdentifier)
+        int existsAt = -1;
+
+        // Checking if charIdentifier exists on the coordinates
+        for (int i = 0; i < positionBlueprint[x][y].size(); i++)
         {
-            existsAt = i;
-            break;
+            if (positionBlueprint[x][y][i] == charIdentifier)
+            {
+                existsAt = i;
+                break;
+            }
         }
-    }
 
-    // Removing position from blueprint if it exists
-    if (existsAt != -1)
-    {
-        vector<char>::iterator it = positionBlueprint[x][y].begin();
-        advance(it, existsAt);
+        // Removing position from blueprint if it exists
+        if (existsAt != -1)
+        {
+            vector<char>::iterator it = positionBlueprint[x][y].begin();
+            advance(it, existsAt);
 
-        positionBlueprint[x][y].erase(it);
+            positionBlueprint[x][y].erase(it);
+        }
     }
 }
 
@@ -469,6 +509,8 @@ void addRabbit(Vector2f position)
 {
     int rabbit_x = floor(position.x);
     int rabbit_y = floor(position.y);
+    // int rabbit_x = floor(width / 2);
+    // int rabbit_y = floor(height / 2);
 
     Rabbit *rabbit = new Rabbit((rabbitSpeedMin + ((float)(rand() % 1000) / 1000) * (rabbitSpeedMax - rabbitSpeedMin)),
                                 Vector2f(1, 1),
@@ -612,11 +654,11 @@ void masterDraw(RenderWindow *window)
     // Draw the terrain
     window->draw(backgroundSprite);
 
-    // Draw the rabbits
-    drawAllRabbits(window);
-
     // Draw the food
     drawAllFood(window);
+
+    // Draw the rabbits
+    drawAllRabbits(window);
 }
 
 void masterInitialize()
