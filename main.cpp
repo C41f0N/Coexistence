@@ -26,7 +26,7 @@ int frameRate = 60;
 int rabbitsCapacity = 1;
 
 float foodSize = 2;
-float foodDensity = 0.0001;
+float foodDensity = 5;
 
 int numFoods = floor((width * height) * foodDensity);
 
@@ -47,6 +47,7 @@ class Rabbit;
 class Food;
 
 vector<Rabbit *> rabbits;
+vector<Food *> foods;
 
 // Objects for terrain generation and display
 Image terrainTextureImage;
@@ -77,8 +78,6 @@ protected:
     friend void initializeRabbits(RenderWindow *window);
 
 public:
-    Animal() {}
-
     Animal(
         float speed,
         Vector2f direction,
@@ -163,13 +162,13 @@ public:
         move();
     }
 
-    // bool checkforfood(string food[], int size)
+    // bool checkforfood(string foods[], int size)
     // {
     //     if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
     //     {
     //         for (int i = 0; i < size; i++)
     //         {
-    //             if (food[i] == "Plants" || food[i] == "Rabbit" || food[i] == "Wolf")
+    //             if (foods[i] == "Plants" || foods[i] == "Rabbit" || foods[i] == "Wolf")
     //             {
     //                 return true;
     //             }
@@ -203,9 +202,6 @@ public:
     {
         shape.setRadius(rabbitSize);
         shape.setFillColor(Color::White);
-
-        // Put shape position in position blueprint
-        addToPositionBlueprint('r', floor(position.x), floor(position.y));
     }
 
     bool checkforPredator()
@@ -244,13 +240,13 @@ public:
         window->draw(shape);
     }
 
-    bool checkforfood(string food[], int size)
+    bool checkforfood(string foods[], int size)
     {
         if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
         {
             for (int i = 0; i < size; i++)
             {
-                if (food[i] == "Plants")
+                if (foods[i] == "Plants")
                 {
                     return true;
                 }
@@ -264,8 +260,6 @@ public:
 class Wolf : public Animal
 {
 public:
-    Wolf() {}
-
     Wolf(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position) {}
 
     bool checkforPrey()
@@ -285,13 +279,13 @@ public:
         window->draw(shape);
     }
 
-    bool checkforfood(string food[], int size)
+    bool checkforfood(string foods[], int size)
     {
         if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
         {
             for (int i = 0; i < size; i++)
             {
-                if (food[i] == "Rabbit")
+                if (foods[i] == "Rabbit")
                 {
                     return true;
                 }
@@ -309,14 +303,11 @@ class Food
     Vector2f position;
 
 public:
-    Food(Vector2f position) : capacity(5)
+    Food(Vector2f position) : capacity(5), position(position)
     {
         shape.setRadius(foodSize);
         shape.setFillColor(Color::Yellow);
-        shape.setPosition(position);
-
-        // registering food to blueprint
-        addToPositionBlueprint('f', floor(position.x), floor(position.y));
+        shape.setPosition(floor(position.x), floor(position.y));
 
         // Centering the shape's origin
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
@@ -328,8 +319,13 @@ public:
 
         if (capacity <= 0)
         {
-            removePositionFromBlueprint('f', position.x, position.y);
+            removeFood(Vector2f((float)position.x, (float)position.y))
         }
+    }
+
+    Vector2f getPosition()
+    {
+        return this->position;
     }
 
     void draw(RenderWindow *window)
@@ -477,6 +473,7 @@ void addRabbit(Vector2f position)
                                 Vector2f(1, 1),
                                 Vector2f(rabbit_x, rabbit_y));
 
+    addToPositionBlueprint('r', floor(position.x), floor(position.y));
     rabbits.push_back(rabbit);
 }
 
@@ -539,6 +536,68 @@ void drawAllRabbits(RenderWindow *window)
     }
 }
 
+// ------------- FOOD FUNCTIONS -----------------------
+void addFood(Vector2f position)
+{
+    Food *food = new Food(position);
+
+    addToPositionBlueprint('f', floor(position.x), floor(position.y));
+    foods.push_back(food);
+}
+
+void removeFood(Vector2f position)
+{
+    int targetAt = -1;
+
+    for (int i = 0; i < foods.size(); i++)
+    {
+        cout << foods[i]->getPosition().x << " " << foods[i]->getPosition().x << endl;
+        if (foods[i]->getPosition() == position)
+        {
+            targetAt = i;
+            break;
+        }
+    }
+
+    if (targetAt >= 0 && targetAt <= foods.size())
+    {
+        vector<Food *>::iterator it = foods.begin();
+
+        advance(it, targetAt);
+
+        foods.erase(it);
+
+        removePositionFromBlueprint('f', position.x, position.y);
+    }
+}
+
+void initializeFood()
+{
+    int numFood = (int)(foodDensity * (width * height) / 10000);
+
+    for (int i = 0; i < (int)(numFood); i++)
+    {
+        int food_x;
+        int food_y;
+
+        do
+        {
+            food_x = rand() % width;
+            food_y = rand() % height;
+        } while (!isLand(food_x, food_y));
+
+        addFood(Vector2f((float)food_x, (float)food_y));
+    }
+}
+
+void drawAllFood(RenderWindow *window)
+{
+    for (int i = 0; i < foods.size(); i++)
+    {
+        foods[i]->draw(window);
+    }
+}
+
 // ------------- MASTER FUNCTIONS -----------------------
 
 void masterUpdate()
@@ -553,6 +612,9 @@ void masterDraw(RenderWindow *window)
 
     // Draw the rabbits
     drawAllRabbits(window);
+
+    // Draw the food
+    drawAllFood(window);
 }
 
 void masterInitialize()
@@ -560,6 +622,7 @@ void masterInitialize()
 
     generateTerrain();
     initializeRabbits();
+    initializeFood();
 }
 
 int main()
