@@ -25,8 +25,8 @@ int intialNumRabbits = 50;
 float rabbitRadius = 3;
 int rabbitVision = 30;
 
-float rabbitMaxHunger = 20;
-float rabbitMaxThirst = 20;
+float rabbitMaxHunger = 50;
+float rabbitMaxThirst = 80;
 float rabbitMaxReproductiveUrge = 100;
 
 float rabbitHungerDelta = 0.05;
@@ -35,6 +35,22 @@ float rabbitReproductiveUrgeDelta = 0.05;
 
 float rabbitSpeedMin = 1;
 float rabbitSpeedMax = 1;
+
+// -------- WOLF VARIABLES ----------
+int initialNumWolves = 20;
+float wolfRadius = 4;
+int wolfVision = 40;
+
+float wolfMaxHunger = 20;
+float wolfMaxThirst = 100;
+float wolfMaxReproductiveUrge = 100;
+
+float wolfHungerDelta = 0.05;
+float wolfThirstDelta = 0.05;
+float wolfReproductiveUrgeDelta = 0.05;
+
+float wolfSpeedMin = 1;
+float wolfSpeedMax = 1;
 
 // -------- PLANT VARIABLES ----------
 float plantDensity = 4;
@@ -54,9 +70,11 @@ float deltaTime = 1 / frameRate;
 
 class Rabbit;
 class Plant;
+class Wolf;
 
 vector<Rabbit *> rabbits;
 vector<Plant *> plants;
+vector<Wolf *> wolves;
 
 // Objects for terrain generation and display
 Image terrainTextureImage;
@@ -74,9 +92,12 @@ bool isWithinBounds(int x, int y);
 void addToPositionBlueprint(char charIdentifier, int x, int y);
 bool checkPositionInBlueprint(char charIdentifier, int x, int y);
 void removePositionFromBlueprint(char charIdentifier, int x, int y);
+
 void removePlant(Vector2f position);
 void addRabbit(Vector2f position);
 void removeRabbit(Vector2f position);
+void addWolf(Vector2f position);
+void removeWolf(Vector2f position);
 
 // ----------------- CLASSES ------------------
 
@@ -488,45 +509,217 @@ public:
     }
 };
 
-// class Wolf : public Animal
-// {
-// public:
-//     Wolf(float speed, Vector2f direction, Vector2f position) : Animal(speed, direction, position) {}
+class Wolf : public Animal
+{
+protected:
+    Vector2f threatsAverageLocation;
 
-//     bool checkforPrey()
-//     {
-//         if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
-//         {
-//             return true; // Prey found
-//         }
-//         else
-//         {
-//             return false; // No prey found
-//         }
-//     }
+public:
+    Wolf(
+        float speed,
+        Vector2f direction,
+        Vector2f position,
+        float maxHunger,
+        float maxThirst,
+        float maxReproductiveUrge)
+        : Animal(
+              speed,
+              direction,
+              position,
+              maxHunger,
+              maxThirst,
+              maxReproductiveUrge),
+          threatsAverageLocation(Vector2f(-1, -1))
+    {
+        shape.setRadius(wolfRadius);
+        shape.setFillColor(Color::Red);
+        shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+    }
 
-//     void draw(RenderWindow *window)
-//     {
-//         window->draw(shape);
-//     }
+    void move() override
+    {
 
-//     bool checkforplant()
-//     {
-//         // if (position.x >= 0 && position.x <= 10 && position.y >= 0 && position.y <= 10)
-//         // {
-//         //     for (int i = 0; i < size; i++)
-//         //     {
-//         //         if (plants[i] == "Rabbit")
-//         //         {
-//         //             return true;
-//         //         }
-//         //         else
-//         //             return false;
-//         //     }
-//         // }
-//         return false;
-//     }
-// };
+        Animal::move();
+
+        Vector2f velocity;
+
+        velocity.x = direction.x * speed;
+        velocity.y = direction.y * speed;
+
+        // Remove old position blueprint
+        removePositionFromBlueprint(wolfCharIdentifier, floor(position.x), floor(position.y));
+
+        position.x = position.x + velocity.x;
+        position.y = position.y + velocity.y;
+
+        addToPositionBlueprint(wolfCharIdentifier, floor(position.x), floor(position.y));
+
+        shape.setPosition(position);
+    }
+
+    void draw(RenderWindow *window)
+    {
+        window->draw(shape);
+    }
+
+    bool atRabbit()
+    {
+
+        return checkPositionInBlueprint(rabbitCharIdentifier, position.x, position.y);
+    }
+
+    bool atWater()
+    {
+        bool found = false;
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                found = checkPositionInBlueprint(waterCharIdentifier, position.x + i - 2, position.y + j - 2);
+                if (found)
+                    return found;
+            }
+        }
+        return found;
+    }
+
+    bool atMate()
+    {
+        bool found = false;
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < 2; j++)
+            {
+                if (i != 0 && j != 0)
+                {
+                    found = checkPositionInBlueprint(wolfCharIdentifier, position.x + i - 2, position.y + j - 2);
+                    if (found)
+                        return found;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    void scanSurroundings()
+    {
+
+        closestFoodSource = Vector2f(-1, -1);
+        closestWaterSource = Vector2f(-1, -1);
+        closestMate = Vector2f(-1, -1);
+
+        // Scan suroundings and look for plant
+        for (int r = 0; r < wolfVision + 1; r++)
+        {
+            // First checking the pixel the wolf is currently on
+            if (r == 0)
+            {
+                int search_x = round(position.x);
+                int search_y = round(position.y);
+
+                // If rabbit found and plant not already found
+                if (checkPositionInBlueprint(rabbitCharIdentifier, search_x, search_y) && closestFoodSource == Vector2f(-1, -1))
+                {
+                    closestFoodSource = Vector2f(search_x, search_y);
+                }
+
+                // If water found
+                if (checkPositionInBlueprint(waterCharIdentifier, search_x, search_y) && closestWaterSource == Vector2f(-1, -1))
+                {
+                    closestWaterSource = Vector2f(search_x, search_y);
+                }
+            }
+            // Checking all other pixels in the wolf's field of vision other than its own position
+            else
+            {
+                float dtheta = (float)(1 / (float)(2 * r));
+                for (float theta = 0; theta < (2 * pi); theta += dtheta)
+                {
+                    int search_x = round(position.x + r * cos(theta));
+                    int search_y = round(position.y + r * sin(theta));
+
+                    // If rabbit found and plant not already found
+                    if (checkPositionInBlueprint(rabbitCharIdentifier, search_x, search_y) && closestFoodSource == Vector2f(-1, -1))
+                    {
+                        closestFoodSource = Vector2f(search_x, search_y);
+                    }
+
+                    // If water found
+                    if (checkPositionInBlueprint(waterCharIdentifier, search_x, search_y) && closestWaterSource == Vector2f(-1, -1))
+                    {
+                        closestWaterSource = Vector2f(search_x, search_y);
+                    }
+
+                    // If mate found
+                    if (checkPositionInBlueprint(wolfCharIdentifier, search_x, search_y) && closestMate == Vector2f(-1, -1))
+                    {
+                        if (floor(position.x) != search_x || floor(position.y) != search_y)
+                        {
+
+                            closestMate = Vector2f(search_x, search_y);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void update()
+    {
+
+        hungerLevel += wolfHungerDelta;
+        thirstLevel += wolfThirstDelta;
+        reproductiveUrge += wolfReproductiveUrgeDelta;
+
+        scanSurroundings();
+
+        // If hunger level is down then check for plant before roaming
+        if (hungerLevel > (float)(maxHunger / 2) && closestFoodSource != Vector2f(-1, -1))
+        {
+            headedTo = closestFoodSource;
+
+            if (atRabbit())
+            {
+                hungerLevel = 0;
+
+                removeRabbit(Vector2f(round(position.x), round(position.y)));
+            }
+        }
+        else if (thirstLevel > (float)(maxThirst / 2) && closestWaterSource != Vector2f(-1, -1))
+        {
+            headedTo = closestWaterSource;
+
+            if (atWater())
+            {
+                thirstLevel = 0;
+            }
+        }
+        else if (reproductiveUrge > (float)(maxReproductiveUrge / 2) && closestMate != Vector2f(-1, -1))
+        {
+            headedTo = closestMate;
+
+            if (atMate())
+            {
+                reproductiveUrge = 0;
+                // CREATE BABY
+                addWolf(position);
+            }
+        }
+        else
+        {
+            roam();
+        }
+
+        // Kill if too much hunger
+        if (hungerLevel > maxHunger || thirstLevel > maxThirst)
+        {
+            removeWolf(position);
+        }
+
+        move();
+    }
+};
 
 class Plant
 {
@@ -716,7 +909,7 @@ void removeRabbit(Vector2f position)
 
     for (int i = 0; i < rabbits.size(); i++)
     {
-        if (rabbits[i]->getPosition() == position)
+        if (Vector2f(floor(rabbits[i]->getPosition().x), floor(rabbits[i]->getPosition().y)) == Vector2f(floor(position.x), floor(position.y)))
         {
             targetAt = i;
             break;
@@ -766,6 +959,86 @@ void drawAllRabbits(RenderWindow *window)
     for (int i = 0; i < rabbits.size(); i++)
     {
         rabbits[i]->draw(window);
+    }
+}
+
+// ------------ FUNCTIONS FOR WOLVES ------------------
+
+void addWolf(Vector2f position)
+{
+    int wolf_x = floor(position.x);
+    int wolf_y = floor(position.y);
+    // int wolf_x = floor(width / 2);
+    // int wolf_y = floor(height / 2);
+
+    Wolf *wolf = new Wolf((wolfSpeedMin + ((float)(rand() % 1000) / 1000) * (wolfSpeedMax - wolfSpeedMin)),
+                          Vector2f(1, 1),
+                          Vector2f(wolf_x, wolf_y),
+                          wolfMaxHunger,
+                          wolfMaxThirst,
+                          wolfMaxReproductiveUrge);
+
+    addToPositionBlueprint(wolfCharIdentifier, floor(position.x), floor(position.y));
+    wolves.push_back(wolf);
+}
+
+void removeWolf(Vector2f position)
+{
+
+    int targetAt = -1;
+
+    for (int i = 0; i < wolves.size(); i++)
+    {
+        if (wolves[i]->getPosition() == position)
+        {
+            targetAt = i;
+            break;
+        }
+    }
+
+    if (targetAt >= 0 && targetAt <= wolves.size())
+    {
+        vector<Wolf *>::iterator it = wolves.begin();
+
+        removePositionFromBlueprint(wolfCharIdentifier, wolves[targetAt]->getPosition().x, wolves[targetAt]->getPosition().y);
+
+        advance(it, targetAt);
+        wolves.erase(it);
+    }
+}
+
+void initializeWolves()
+{
+    for (int i = 0; i < initialNumWolves; i++)
+    {
+
+        int wolf_x;
+        int wolf_y;
+
+        do
+        {
+            wolf_x = rand() % width;
+            wolf_y = rand() % height;
+        } while (!isLand(wolf_x, wolf_y));
+
+        addWolf(Vector2f((float)wolf_x, (float)wolf_y));
+    }
+}
+
+void updateAllWolves()
+{
+    for (int i = 0; i < wolves.size(); i++)
+    {
+        wolves[i]->update();
+    }
+}
+
+void drawAllWolves(RenderWindow *window)
+{
+
+    for (int i = 0; i < wolves.size(); i++)
+    {
+        wolves[i]->draw(window);
     }
 }
 
@@ -835,7 +1108,9 @@ void drawAllPlants(RenderWindow *window)
 void masterUpdate()
 {
     updateAllRabbits();
-    fprintf(stderr, "Rabbits Alive: %d\n", rabbits.size());
+    updateAllWolves();
+
+    fprintf(stderr, "Rabbits Alive: %ld Wolves Alive: %ld\n", rabbits.size(), wolves.size());
 }
 
 void masterDraw(RenderWindow *window)
@@ -846,7 +1121,10 @@ void masterDraw(RenderWindow *window)
     // Draw the rabbits
     drawAllRabbits(window);
 
-    // Draw the plant
+    // Dray the wolves
+    drawAllWolves(window);
+
+    // Draw the plants
     drawAllPlants(window);
 }
 
@@ -855,6 +1133,7 @@ void masterInitialize()
 
     generateTerrain();
     initializeRabbits();
+    initializeWolves();
     initializePlant();
 }
 
