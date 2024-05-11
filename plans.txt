@@ -1,14 +1,14 @@
 // Marking positions of animals on a sort of blueprint ---- DONE
 
-/# Searching for anything in position blueprint ---- ALGO DONE
+// Searching for anything in position blueprint ---- DONE
 
-# Making dynamic object arrays for each entity
+// Making dynamic object arrays for each entity ---- DONE
 
-# Mechanic to eat food
+// Mechanic to eat food ---- DONE
 
-# Mechanic to drink water
+// Mechanic to drink water ---- DONE
 
 # Mechanic to run away from predator
 
 (OPTIONAL)
-# Mechanic for reproduction (basic, just if reproductive urge goes up and if a rabbit is nearby then go close to it and add a new rabbit to that location)
+// Mechanic for reproduction (basic, just if reproductive urge goes up and if a rabbit is nearby then go close to it and add a new rabbit to that location) ---- DONE
