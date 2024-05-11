@@ -19,32 +19,36 @@ char wolfCharIdentifier = 'W';
 // Setting global variables
 const int height = 1080 / 2;
 const int width = 1920 / 2;
-int numRabbits = 1;
-float rabbitSize = 3;
+
+// -------- RABBIT VARIABLES ----------
+int intialNumRabbits = 50;
+float rabbitRadius = 3;
 int rabbitVision = 30;
 
-float rabbitMaxHunger = 80;
-float rabbitMaxThirst = 40;
+float rabbitMaxHunger = 20;
+float rabbitMaxThirst = 20;
 float rabbitMaxReproductiveUrge = 100;
 
 float rabbitHungerDelta = 0.05;
 float rabbitThirstDelta = 0.05;
 float rabbitReproductiveUrgeDelta = 0.05;
 
-int frameRate = 30;
+float rabbitSpeedMin = 1;
+float rabbitSpeedMax = 1;
 
-float plantSize = 5;
+// -------- PLANT VARIABLES ----------
 float plantDensity = 4;
-
+float plantSize = 5;
 int numPlants = floor((width * height) * plantDensity);
 
+// -------- COLOR VARIABLES ----------
 int landColorRGBA[4] = {1, 99, 0, 255};
 int waterColorRGBA[4] = {6, 54, 137, 255};
 
-const float pi = 3.142;
+// -------- OTHER VARIABLES ----------
+int frameRate = 30;
 
-float rabbitSpeedMin = 1;
-float rabbitSpeedMax = 1;
+const float pi = 3.142;
 
 float deltaTime = 1 / frameRate;
 
@@ -71,6 +75,7 @@ void addToPositionBlueprint(char charIdentifier, int x, int y);
 bool checkPositionInBlueprint(char charIdentifier, int x, int y);
 void removePositionFromBlueprint(char charIdentifier, int x, int y);
 void removePlant(Vector2f position);
+void addRabbit(Vector2f position);
 void removeRabbit(Vector2f position);
 
 // ----------------- CLASSES ------------------
@@ -108,6 +113,7 @@ public:
           position(position),
           maxHunger(maxHunger),
           maxThirst(maxThirst),
+          maxReproductiveUrge(maxReproductiveUrge),
           hungerLevel(0),
           thirstLevel(0),
           reproductiveUrge(0),
@@ -215,7 +221,7 @@ public:
               maxReproductiveUrge),
           threatsAverageLocation(Vector2f(-1, -1))
     {
-        shape.setRadius(rabbitSize);
+        shape.setRadius(rabbitRadius);
         shape.setFillColor(Color::White);
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
     }
@@ -279,9 +285,9 @@ public:
     bool atMate()
     {
         bool found = false;
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 2; i++)
         {
-            for (int j = 0; j < 5; j++)
+            for (int j = 0; j < 2; j++)
             {
                 if (i != 0 && j != 0)
                 {
@@ -338,7 +344,7 @@ public:
                     }
                 }
             }
-            // Checking all other pixels in the rabbit's field of vision
+            // Checking all other pixels in the rabbit's field of vision other than its own position
             else
             {
                 float dtheta = (float)(1 / (float)(2 * r));
@@ -360,9 +366,13 @@ public:
                     }
 
                     // If mate found
-                    if (checkPositionInBlueprint(rabbitCharIdentifier, search_x, search_y) && position != Vector2f(round(search_x), round(search_y)) && closestMate == Vector2f(-1, -1))
+                    if (checkPositionInBlueprint(rabbitCharIdentifier, search_x, search_y) && closestMate == Vector2f(-1, -1))
                     {
-                        closestMate = Vector2f(search_x, search_y);
+                        if (floor(position.x) != search_x || floor(position.y) != search_y)
+                        {
+
+                            closestMate = Vector2f(search_x, search_y);
+                        }
                     }
 
                     // If wolf found
@@ -431,14 +441,11 @@ public:
         thirstLevel += rabbitThirstDelta;
         reproductiveUrge += rabbitReproductiveUrgeDelta;
 
-        fprintf(stderr, "Thirst Levels: %f Hunger Levels: %f Reproductive Urge: %f\n", thirstLevel, hungerLevel, reproductiveUrge);
-
         scanSurroundings();
 
         // If hunger level is down then check for plant before roaming
         if (hungerLevel > (float)(maxHunger / 2) && closestFoodSource != Vector2f(-1, -1))
         {
-            cout << "Hungry" << endl;
             headedTo = closestFoodSource;
 
             if (atPlant())
@@ -448,7 +455,6 @@ public:
         }
         else if (thirstLevel > (float)(maxThirst / 2) && closestWaterSource != Vector2f(-1, -1))
         {
-            cout << "Thirsty" << endl;
             headedTo = closestWaterSource;
 
             if (atWater())
@@ -456,20 +462,19 @@ public:
                 thirstLevel = 0;
             }
         }
-        // else if (reproductiveUrge > (float)(maxReproductiveUrge / 2) && closestMate != Vector2f(-1, -1))
-        // {
-        //     cout << "Horny" << endl;
-        //     headedTo = closestMate;
+        else if (reproductiveUrge > (float)(maxReproductiveUrge / 2) && closestMate != Vector2f(-1, -1))
+        {
+            headedTo = closestMate;
 
-        //     if (atMate())
-        //     {
-        //         reproductiveUrge = 0;
-        //         // TODO CREATE BABY
-        //     }
-        // }
+            if (atMate())
+            {
+                reproductiveUrge = 0;
+                // CREATE BABY
+                addRabbit(position);
+            }
+        }
         else
         {
-            cout << "Bored" << endl;
             roam();
         }
 
@@ -706,7 +711,6 @@ void addRabbit(Vector2f position)
 
 void removeRabbit(Vector2f position)
 {
-    fprintf(stderr, "remove rabbit\n");
 
     int targetAt = -1;
 
@@ -732,7 +736,7 @@ void removeRabbit(Vector2f position)
 
 void initializeRabbits()
 {
-    for (int i = 0; i < numRabbits; i++)
+    for (int i = 0; i < intialNumRabbits; i++)
     {
 
         int rabbit_x;
@@ -776,15 +780,12 @@ void addPlant(Vector2f position)
 
 void removePlant(Vector2f position)
 {
-    fprintf(stderr, "Here4\n");
     int targetAt = -1;
 
     for (int i = 0; i < plants.size(); i++)
     {
-        cout << plants[i]->getPosition().x << " " << plants[i]->getPosition().x << endl;
         if (plants[i]->getPosition() == position)
         {
-            cout << "removing plant\n";
             targetAt = i;
             break;
         }
@@ -834,6 +835,7 @@ void drawAllPlants(RenderWindow *window)
 void masterUpdate()
 {
     updateAllRabbits();
+    fprintf(stderr, "Rabbits Alive: %d\n", rabbits.size());
 }
 
 void masterDraw(RenderWindow *window)
@@ -841,11 +843,11 @@ void masterDraw(RenderWindow *window)
     // Draw the terrain
     window->draw(backgroundSprite);
 
-    // Draw the plant
-    drawAllPlants(window);
-
     // Draw the rabbits
     drawAllRabbits(window);
+
+    // Draw the plant
+    drawAllPlants(window);
 }
 
 void masterInitialize()
