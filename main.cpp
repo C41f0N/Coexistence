@@ -21,7 +21,7 @@ const int height = 1080 / 2;
 const int width = 1920 / 2;
 
 // -------- RABBIT VARIABLES ----------
-int intialNumRabbits = 50;
+int intialNumRabbits = 30;
 float rabbitRadius = 3;
 int rabbitVision = 30;
 
@@ -37,12 +37,12 @@ float rabbitSpeedMin = 1;
 float rabbitSpeedMax = 1;
 
 // -------- WOLF VARIABLES ----------
-int initialNumWolves = 20;
+int initialNumWolves = 30;
 float wolfRadius = 4;
 int wolfVision = 40;
 
-float wolfMaxHunger = 20;
-float wolfMaxThirst = 100;
+float wolfMaxHunger = 100;
+float wolfMaxThirst = 80;
 float wolfMaxReproductiveUrge = 100;
 
 float wolfHungerDelta = 0.05;
@@ -135,9 +135,6 @@ public:
           maxHunger(maxHunger),
           maxThirst(maxThirst),
           maxReproductiveUrge(maxReproductiveUrge),
-          hungerLevel(0),
-          thirstLevel(0),
-          reproductiveUrge(0),
           closestFoodSource(Vector2f(-1, -1)),
           closestWaterSource(Vector2f(-1, -1)),
           closestMate(Vector2f(-1, -1))
@@ -245,6 +242,11 @@ public:
         shape.setRadius(rabbitRadius);
         shape.setFillColor(Color::White);
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+
+        // Setting random values for thirst hunger and mating urge
+        hungerLevel = (float)(rand() % (int)(rabbitMaxHunger));
+        thirstLevel = (float)(rand() % (int)(rabbitMaxThirst));
+        reproductiveUrge = (float)(rand() % (int)(rabbitMaxReproductiveUrge));
     }
 
     void move() override
@@ -534,6 +536,11 @@ public:
         shape.setRadius(wolfRadius);
         shape.setFillColor(Color::Red);
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+
+        // Setting random values for thirst hunger and mating urge
+        hungerLevel = (float)(rand() % (int)(wolfMaxHunger));
+        thirstLevel = (float)(rand() % (int)(wolfMaxThirst));
+        reproductiveUrge = (float)(rand() % (int)(wolfMaxReproductiveUrge));
     }
 
     void move() override
