@@ -757,50 +757,47 @@ public:
 
 void displayLoadingScreen(RenderWindow *window)
 {
-    Text text;
+    Text headingText, subtext;
     Font font;
     font.loadFromFile("assets/fonts/8-bit-hud.ttf");
-    text.setFont(font);
-    text.setString("Generating\nTerrain...");
+    headingText.setFont(font);
+    headingText.setString("Generating\nTerrain...");
 
-    text.setCharacterSize(25);
+    headingText.setCharacterSize(25);
 
-    sf::FloatRect bounds = text.getLocalBounds();
-    text.setOrigin(-bounds.left + bounds.width / 2.f, -bounds.top + bounds.height / 2.f);
+    sf::FloatRect bounds = headingText.getLocalBounds();
+    headingText.setOrigin(-bounds.left + bounds.width / 2.f, -bounds.top + bounds.height / 2.f);
 
-    text.setPosition(Vector2f(window->getSize().x / 2, window->getSize().y / 2));
-    text.setFillColor(Color::White);
+    headingText.setPosition(Vector2f(window->getSize().x / 2, window->getSize().y / 2));
+    headingText.setFillColor(Color::White);
 
     window->clear();
-    window->draw(text);
-    window->display();
-}
+    window->draw(headingText);
 
-void displayMenuScreen()
-{
+    window->display();
 }
 
 void drawPopulationStats(RenderWindow *window)
 {
     Text text;
     Font font;
-    font.loadFromFile("assets/fonts/8-bit-hud.ttf");
+    font.loadFromFile("assets/fonts/Jersey15-Regular.ttf");
     text.setFont(font);
 
-    String textString = "Rabbits Alive: " + to_string(rabbits.size()) + "                                 Wolves Alive: " + to_string(wolves.size());
+    String textString = "Rabbits Alive: " + to_string(rabbits.size()) + "                                                                                                                                                                     Wolves Alive: " + to_string(wolves.size());
     RectangleShape shape(Vector2f(width, 30));
 
-    shape.setFillColor(Color(0, 0, 0, 255 * 0.6));
+    shape.setFillColor(Color(0, 0, 0, 255 * 0.9));
     text.setFillColor(Color::White);
 
     text.setString(textString);
-    text.setCharacterSize(10);
+    text.setCharacterSize(20);
 
     // FloatRect bounds = text.getLocalBounds();
     // text.setOrigin(-bounds.left + bounds.width / 2.f, -bounds.top + bounds.height / 2.f);
 
-    shape.setPosition(Vector2f(0, height - shape.getSize().y));
-    text.setPosition(Vector2f((width / 2) - (text.getLocalBounds().width / 2), (height - text.getLocalBounds().height) - 5));
+    shape.setPosition(Vector2f(0, 0));
+    text.setPosition(Vector2f((width / 2) - (text.getLocalBounds().width / 2), (text.getLocalBounds().height - 10)));
 
     window->draw(shape);
     window->draw(text);
