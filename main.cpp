@@ -27,7 +27,7 @@ int rabbitVision = 30;
 
 float rabbitMaxHunger = 50;
 float rabbitMaxThirst = 80;
-float rabbitMaxReproductiveUrge = 100;
+float rabbitMaxReproductiveUrge = 200;
 
 float rabbitHungerDelta = 0.05;
 float rabbitThirstDelta = 0.05;
@@ -41,9 +41,9 @@ int initialNumWolves = 30;
 float wolfRadius = 4;
 int wolfVision = 40;
 
-float wolfMaxHunger = 100;
+float wolfMaxHunger = 50;
 float wolfMaxThirst = 80;
-float wolfMaxReproductiveUrge = 100;
+float wolfMaxReproductiveUrge = 200;
 
 float wolfHungerDelta = 0.05;
 float wolfThirstDelta = 0.05;
@@ -776,6 +776,36 @@ void displayLoadingScreen(RenderWindow *window)
     window->display();
 }
 
+void displayMenuScreen()
+{
+}
+
+void drawPopulationStats(RenderWindow *window)
+{
+    Text text;
+    Font font;
+    font.loadFromFile("assets/fonts/8-bit-hud.ttf");
+    text.setFont(font);
+
+    String textString = "Rabbits Alive: " + to_string(rabbits.size()) + "                                 Wolves Alive: " + to_string(wolves.size());
+    RectangleShape shape(Vector2f(width, 30));
+
+    shape.setFillColor(Color(0, 0, 0, 255 * 0.6));
+    text.setFillColor(Color::White);
+
+    text.setString(textString);
+    text.setCharacterSize(10);
+
+    // FloatRect bounds = text.getLocalBounds();
+    // text.setOrigin(-bounds.left + bounds.width / 2.f, -bounds.top + bounds.height / 2.f);
+
+    shape.setPosition(Vector2f(0, height - shape.getSize().y));
+    text.setPosition(Vector2f((width / 2) - (text.getLocalBounds().width / 2), (height - text.getLocalBounds().height) - 5));
+
+    window->draw(shape);
+    window->draw(text);
+}
+
 // ------------ TERRAIN FUNCTIONS ----------------
 
 // To generate a terrain using perlin noise
@@ -916,7 +946,7 @@ void removeRabbit(Vector2f position)
 
     for (int i = 0; i < rabbits.size(); i++)
     {
-        if (Vector2f(floor(rabbits[i]->getPosition().x), floor(rabbits[i]->getPosition().y)) == Vector2f(floor(position.x), floor(position.y)))
+        if (Vector2f((float)floor(rabbits[i]->getPosition().x), (float)floor(rabbits[i]->getPosition().y)) == Vector2f((float)floor(position.x), (float)floor(position.y)))
         {
             targetAt = i;
             break;
@@ -1133,6 +1163,9 @@ void masterDraw(RenderWindow *window)
 
     // Draw the plants
     drawAllPlants(window);
+
+    // Draw population stats
+    drawPopulationStats(window);
 }
 
 void masterInitialize()
