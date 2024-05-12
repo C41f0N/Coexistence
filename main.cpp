@@ -397,20 +397,6 @@ public:
                             closestMate = Vector2f(search_x, search_y);
                         }
                     }
-
-                    // If wolf found
-                    if (checkPositionInBlueprint(wolfCharIdentifier, search_x, search_y))
-                    {
-                        if (threatsAverageLocation == Vector2f(-1, -1))
-                        {
-                            threatsAverageLocation = Vector2f(search_x, search_y);
-                        }
-                        else
-                        {
-                            threatsAverageLocation = Vector2f((float)round((threatsAverageLocation.x + search_x) / 2),
-                                                              (float)round((threatsAverageLocation.y + search_y) / 2));
-                        }
-                    }
                 }
             }
         }
