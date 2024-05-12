@@ -690,7 +690,7 @@ public:
             {
                 hungerLevel = 0;
 
-                removeRabbit(Vector2f(round(position.x), round(position.y)));
+                removeRabbit(Vector2f(floor(position.x), floor(position.y)));
             }
         }
         else if (thirstLevel > (float)(maxThirst / 2) && closestWaterSource != Vector2f(-1, -1))
