@@ -1,6 +1,10 @@
+<div id="header" align="center">
 <h1 style="text-align:center">
-Co-existence 🐇  
+🦊 Co-existence 🐇 
 </h1>
+  
+</div>
+
 A simulation based game that shows how rabbits and wolves interact with eachother and how their populations can vary with time, depending on their genetic features. The program includes terrain generation and detailed modifiable variables.
 <br>
 <br>
