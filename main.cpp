@@ -25,9 +25,9 @@ int intialNumRabbits = 30;
 float rabbitSize = 1.5;
 int rabbitVision = 30;
 
-float rabbitMaxHunger = 50;
+float rabbitMaxHunger = 80;
 float rabbitMaxThirst = 80;
-float rabbitMaxReproductiveUrge = 200;
+float rabbitMaxReproductiveUrge = 400;
 
 float rabbitHungerDelta = 0.05;
 float rabbitThirstDelta = 0.05;
@@ -38,10 +38,10 @@ float rabbitSpeedMax = 1;
 
 // -------- WOLF VARIABLES ----------
 int initialNumWolves = 20;
-float wolfRadius = 4;
+float wolfSize = 1.5;
 int wolfVision = 40;
 
-float wolfMaxHunger = 50;
+float wolfMaxHunger = 100;
 float wolfMaxThirst = 80;
 float wolfMaxReproductiveUrge = 200;
 
@@ -804,6 +804,22 @@ void drawPopulationStats(RenderWindow *window)
     window->draw(text);
 }
 
+bool onIntro = true;
+
+void drawIntroScreen(RenderWindow *window)
+{
+    Image introImage;
+    introImage.loadFromFile("assets/images/IntroScreen.png");
+    Texture introTexture;
+    introTexture.loadFromImage(introImage);
+
+    Sprite introSprite;
+    introSprite.setTexture(introTexture);
+    introSprite.setScale(0.5, 0.5);
+
+    window->draw(introSprite);
+}
+
 // ------------ TERRAIN FUNCTIONS ----------------
 
 // To generate a terrain using perlin noise
@@ -1199,13 +1215,29 @@ int main()
             {
                 window.close();
             }
+
+            if (onIntro && event.type == sf::Event::EventType::KeyPressed)
+            {
+                if (event.key.code == sf::Keyboard::Enter)
+                {
+                    onIntro = false;
+                }
+            }
         }
 
-        masterUpdate();
+        if (onIntro)
+        {
+            window.clear();
+            drawIntroScreen(&window);
+        }
+        else
+        {
+            masterUpdate();
 
-        window.clear();
+            window.clear();
 
-        masterDraw(&window);
+            masterDraw(&window);
+        };
 
         window.display();
     }
