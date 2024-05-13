@@ -1197,6 +1197,11 @@ int main()
     srand(time(NULL));
 
     RenderWindow window(VideoMode(width, height), "Coexistence");
+    RectangleShape blackScreen(Vector2f(width, height));
+
+    // Initialization for fade effect
+    blackScreen.setFillColor(Color::Black);
+    int blackScreenAlpha = 255;
 
     masterInitialize();
 
@@ -1232,11 +1237,25 @@ int main()
         }
         else
         {
+            // Fade effect cuz why not?
+            if (blackScreenAlpha > 0)
+            {
+                blackScreenAlpha -= 64;
+            }
+
+            if (blackScreenAlpha < 0)
+            {
+                blackScreenAlpha = 0;
+            }
+
             masterUpdate();
 
             window.clear();
 
             masterDraw(&window);
+
+            blackScreen.setFillColor(Color(0, 0, 0, blackScreenAlpha));
+            window.draw(blackScreen);
         };
 
         window.display();
