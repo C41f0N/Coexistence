@@ -22,7 +22,7 @@ const int width = 1920 / 2;
 
 // -------- RABBIT VARIABLES ----------
 int intialNumRabbits = 30;
-float rabbitRadius = 3;
+float rabbitSize = 1.5;
 int rabbitVision = 30;
 
 float rabbitMaxHunger = 50;
@@ -37,7 +37,7 @@ float rabbitSpeedMin = 1;
 float rabbitSpeedMax = 1;
 
 // -------- WOLF VARIABLES ----------
-int initialNumWolves = 30;
+int initialNumWolves = 20;
 float wolfRadius = 4;
 int wolfVision = 40;
 
@@ -58,8 +58,9 @@ float plantSize = 5;
 int numPlants = floor((width * height) * plantDensity);
 
 // -------- COLOR VARIABLES ----------
-int landColorRGBA[4] = {1, 99, 0, 255};
-int waterColorRGBA[4] = {6, 54, 137, 255};
+int landColorRGBA[4] = {(int)(255 * 3.1 / 100), (int)(255 * 64.7 / 100), (int)(255 * 9.0 / 100), 255};
+int waterColorRGBA[4] = {(int)(255 * 11.0 / 100), (int)(255 * 29.0 / 100), (int)(255 * 85.5 / 100), 255};
+int treeColorRGBA[4] = {(int)(255 * 0.0 / 100), (int)(255 * 42.0 / 100), (int)(255 * 15.7 / 100), 255};
 
 // -------- OTHER VARIABLES ----------
 int frameRate = 30;
@@ -104,7 +105,8 @@ void removeWolf(Vector2f position);
 class Animal
 {
 protected:
-    CircleShape shape;  // SFML Shape object for the animal
+    Sprite shape; // SFML Shape object for the animal
+    Texture animalTexture;
     float speed;        // Speed of the animal
     Vector2f direction; // Direction the animal is headed
     Vector2f position;  // Current position of the animal
@@ -239,8 +241,14 @@ public:
               maxReproductiveUrge),
           threatsAverageLocation(Vector2f(-1, -1))
     {
-        shape.setRadius(rabbitRadius);
-        shape.setFillColor(Color::White);
+        Image rabbitImage;
+        rabbitImage.loadFromFile("assets/images/RabbitFace.png");
+        animalTexture.loadFromImage(rabbitImage);
+        shape.setTexture(animalTexture);
+        shape.setScale(Vector2f(shape.getScale().x / 15 * rabbitSize, shape.getScale().y / 15 * rabbitSize));
+
+        // shape.setRadius(rabbitSize);
+        // shape.setFillColor(Color::White);
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
 
         // Setting random values for thirst hunger and mating urge
@@ -519,9 +527,14 @@ public:
               maxReproductiveUrge),
           threatsAverageLocation(Vector2f(-1, -1))
     {
-        shape.setRadius(wolfRadius);
-        shape.setFillColor(Color::Red);
-        shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
+
+        Image wolfImage;
+        wolfImage.loadFromFile("assets/images/WolfFace.png");
+        animalTexture.loadFromImage(wolfImage);
+        shape.setTexture(animalTexture);
+        shape.setScale(Vector2f(shape.getScale().x / 12 * wolfSize, shape.getScale().y / 12 * wolfSize));
+
+        shape.setOrigin(shape.getScale().x / 2, shape.getScale().y / 2);
 
         // Setting random values for thirst hunger and mating urge
         hungerLevel = (float)(rand() % (int)(wolfMaxHunger));
@@ -723,11 +736,13 @@ public:
     Plant(Vector2f position) : position(position)
     {
         shape.setRadius(plantSize);
+        shape.setOutlineColor(Color(0, 50, 0, 255));
+        shape.setOutlineThickness(0.5);
         // Centering the shape's origin
         shape.setOrigin(shape.getGlobalBounds().width / 2, shape.getGlobalBounds().height / 2);
         shape.setPosition(floor(position.x), floor(position.y));
 
-        shape.setFillColor(Color::Green);
+        shape.setFillColor(Color(treeColorRGBA[0], treeColorRGBA[1], treeColorRGBA[2], treeColorRGBA[3]));
     }
 
     Vector2f getPosition()
