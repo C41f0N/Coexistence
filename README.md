@@ -3,11 +3,12 @@
 🦊 Co-existence 🐇 
 </h1>
   
-</div>
 
-A simulation based game that shows how rabbits and wolves interact with eachother and how their populations can vary with time, depending on their genetic features. The program includes terrain generation and detailed modifiable variables.
-<br>
-<br>
+A simulation based game that shows how rabbits and wolves interact with eachother and how their populations can vary with time, depending on their genetic features.
+<h2 style="text-align:center">
+Screenshots
+</h2>
+</div>
 <br>
 <p align="center">
 <img src="https://github.com/thenoisyninga/Coexistence/assets/88588593/605ffbe5-42c2-4f08-a583-e871b474ad84" height="300"/>&nbsp;
