@@ -4,7 +4,11 @@
 </h1>
   
 
-Dive into Coexistance, where rabbits and foxes strive together in an evolving ecosystem! Explore how varying factors influence population dynamics and wildlife behavior. Modify settings such as hunger, thirst, reproduction, vision, and speed, then watch the captivating consequences unfold. Experience real-life ecological concepts while navigating the delicate equilibrium necessary for diverse creatures sharing a common habitat. Discover harmony amidst challenges in this immersive world of Coexistance!
+<h3>Dive into Coexistance, where rabbits and foxes strive together in an evolving ecosystem.</h3>
+
+Explore how varying factors influence population dynamics and wildlife behavior. Modify settings such as hunger, thirst, reproduction, vision, and speed, then watch the captivating consequences unfold. Experience real-life ecological concepts while navigating the delicate equilibrium necessary for diverse creatures sharing a common habitat.
+
+Discover harmony amidst challenges in this immersive world of Coexistance!
 <h2 style="text-align:center">
 Screenshots
 </h2>
